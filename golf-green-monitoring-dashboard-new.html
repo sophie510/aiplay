@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高尔夫果岭智能监测系统</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+    }
+    body {
+      background-color: #051224;
+      color: #fff;
+      overflow: hidden;
+    }
+    .container {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 60px 1fr 250px;
+      padding: 10px;
+      gap: 10px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(90deg, rgba(12,34,66,0.8) 0%, rgba(21,60,114,0.8) 100%);
+      padding: 0 20px;
+      border-radius: 4px;
+      border-bottom: 1px solid #1976d2;
+      box-shadow: 0 2px 10px rgba(0,100,255,0.2);
+    }
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      background: linear-gradient(90deg, #3dbff0, #b4ecff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 10px rgba(61,191,240,0.5);
+    }
+    .datetime {
+      display: flex;
+      align-items: center;
+    }
+    .datetime span {
+      margin-left: 15px;
+      color: #7eb9ff;
+    }
+    .weather {
+      display: flex;
+      align-items: center;
+    }
+    .weather-icon {
+      width: 30px;
+      height: 30px;
+      margin-right: 10px;
+    }
+    .alert {
+      background-color: rgba(255,77,77,0.2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid #ff4d4d;
+      color: #ff4d4d;
+      font-weight: bold;
+    }
+    .stats-info {
+      display: flex;
+      gap: 20px;
+    }
+    .stats-item {
+      display: flex;
+      align-items: center;
+    }
+    .stats-label {
+      font-size: 12px;
+      color: #7eb9ff;
+      margin-right: 5px;
+    }
+    .stats-value {
+      font-weight: bold;
+      color: #fff;
+    }
+    .main-content {
+      display: grid;
+      grid-template-columns: 350px 1fr 350px;
+      gap: 10px;
+    }
+    .left-panel, .right-panel, .center-panel, .bottom-panel {
+      background-color: rgba(13,37,70,0.8);
+      border-radius: 4px;
+      padding: 15px;
+      border: 1px solid #1e4976;
+      box-shadow: 0 2px 10px rgba(0,100,255,0.1);
+      overflow: hidden;
+    }
+    .panel-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #7eb9ff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .map-container {
+      height: 250px;
+      background-color: #0a1c36;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      position: relative;
+      border: 1px solid #1e4976;
+    }
+    .map-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .green-marker {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #fff;
+      transform: translate(-50%, -50%);
+    }
+    .green-marker.normal {
+      background-color: #4caf50;
+    }
+    .green-marker.warning {
+      background-color: #ff9800;
+    }
+    .green-marker.danger {
+      background-color: #f44336;
+    }
+    .green-marker.selected {
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.5);
+      transform: translate(-50%, -50%) scale(1.2);
+    }
+    .drone-status {
+      margin-top: 20px;
+    }
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .status-value {
+      color: #4fc3f7;
+      font-weight: bold;
+    }
+    .progress-bar {
+      height: 6px;
+      background-color: #102a47;
+      border-radius: 3px;
+      margin-top: 5px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3dbff0, #00b0ff);
+      border-radius: 3px;
+    }
+    .battery-low {
+      background: linear-gradient(90deg, #f44336, #ff9800);
+    }
+    .center-panel {
+      display: flex;
+      flex-direction: column;
+    }
+    .green-details-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .green-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: #fff;
+    }
+    .layer-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .layer-btn {
+      padding: 4px 10px;
+      background-color: #0d2546;
+      border: 1px solid #1976d2;
+      border-radius: 4px;
+      color: #7eb9ff;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .layer-btn.active {
+      background-color: #1976d2;
+      color: white;
+    }
+    .green-image-container {
+      flex: 1;
+      position: relative;
+      background-color: #0a1c36;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid #1e4976;
+    }
+    .layer-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .layer-image.active {
+      opacity: 1;
+    }
+    .trend-chart {
+      height: 120px;
+      background-color: #0a1c36;
+      border-radius: 4px;
+      margin-top: 15px;
+      border: 1px solid #1e4976;
+      padding: 10px;
+    }
+    .chart-container {
+      width: 100%;
+      height: 100%;
+    }
+    .metrics-panel {
+      margin-bottom: 20px;
+    }
+    .metric-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .metric-label {
+      font-size: 14px;
+    }
+    .metric-value {
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .metric-good {
+      color: #4caf50;
+    }
+    .metric-warning {
+      color: #ff9800;
+    }
+    .metric-danger {
+      color: #f44336;
+    }
+    .alerts-list {
+      height: 220px;
+      overflow-y: auto;
+    }
+    .alert-item {
+      padding: 10px;
+      background-color: rgba(255,152,0,0.1);
+      border-left: 3px solid #ff9800;
+      margin-bottom: 10px;
+      border-radius: 0 4px 4px 0;
+    }
+    .alert-item.high {
+      background-color: rgba(244,67,54,0.1);
+      border-left-color: #f44336;
+    }
+    .alert-title {
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+    .alert-details {
+      font-size: 12px;
+      color: #b0bec5;
+    }
+    .alert-time {
+      font-size: 12px;
+      color: #78909c;
+      margin-top: 5px;
+      text-align: right;
+    }
+    .bottom-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 15px;
+    }
+    /* 自定义滚动条 */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0a1c36;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e4976;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #1976d2;
+    }
+    .chart-box {
+      background-color: #0a1c36;
+      border-radius: 4px;
+      border: 1px solid #1e4976;
+      padding: 10px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #7eb9ff;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .chart-image {
+      flex: 1;
+      width: 100%;
+      object-fit: cover;
+    }
+    .overall-stats {
+      margin-top: 15px;
+      margin-bottom: 15px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .stat-box {
+      background-color: rgba(21,60,114,0.3);
+      border-radius: 4px;
+      padding: 8px;
+      border: 1px solid rgba(21,60,114,0.8);
+    }
+    .stat-title {
+      font-size: 12px;
+      color: #7eb9ff;
+      margin-bottom: 5px;
+    }
+    .stat-value {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .location-info {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .location-badge {
+      background-color: rgba(21,60,114,0.5);
+      border-radius: 4px;
+      padding: 5px 10px;
+      font-size: 12px;
+      border: 1px solid rgba(21,60,114,0.8);
+    }
+    .coordinate-display {
+      font-size: 12px;
+      color: #7eb9ff;
+      background-color: rgba(9,27,51,0.8);
+      padding: 5px 10px;
+      border-radius: 4px;
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      z-index: 5;
+      border: 1px solid rgba(21,60,114,0.5);
+    }
+    .coordinate-values {
+      font-family: monospace;
+      color: #fff;
+    }
+    .trend-indicators {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .trend-item {
+      flex: 1;
+      background-color: rgba(13,37,70,0.5);
+      border-radius: 4px;
+      padding: 8px;
+      text-align: center;
+      border: 1px solid #1e4976;
+    }
+    .trend-label {
+      font-size: 12px;
+      color: #7eb9ff;
+      margin-bottom: 5px;
+    }
+    .trend-value {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .trend-direction {
+      margin-left: 5px;
+      font-size: 14px;
+    }
+    .trend-up {
+      color: #4caf50;
+    }
+    .trend-down {
+      color: #f44336;
+    }
+    .trend-neutral {
+      color: #ffc107;
+    }
+    .comparison-selector {
+      display: flex;
+      gap: 10px;
+      margin-top: 5px;
+      margin-bottom: 8px;
+    }
+    .date-select {
+      flex: 1;
+      padding: 3px;
+      background-color: #0d2546;
+      border: 1px solid #1976d2;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 12px;
+    }
+    .data-card {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: rgba(13,37,70,0.5);
+      border-radius: 4px;
+      border: 1px solid #1e4976;
+    }
+    .data-card-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #7eb9ff;
+      margin-bottom: 8px;
+    }
+    .timeline-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .timeline-slider {
+      flex: 1;
+      height: 4px;
+    }
+    .timeline-date {
+      font-size: 12px;
+      color: #7eb9ff;
+    }
+    .comparison-chart {
+      margin-top: 10px;
+      height: 150px;
+      position: relative;
+    }
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 5px;
+      justify-content: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+    }
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+    .today-color {
+      background-color: #1976d2;
+    }
+    .yesterday-color {
+      background-color: #4fc3f7;
+    }
+    .week-ago-color {
+      background-color: #7eb9ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">高尔夫果岭智能监测系统 - 深圳福田高尔夫球场</div>
+      <div class="datetime">
+        <span id="date">2025年4月15日</span>
+        <span id="time">10:25:36</span>
+      </div>
+      <div class="weather">
+        <img src="/api/placeholder/30/30" alt="晴朗" class="weather-icon">
+        <span>24°C 晴朗 微风 湿度45%</span>
+      </div>
+      <div class="stats-info">
+        <div class="stats-item">
+          <span class="stats-label">已巡检：</span>
+          <span class="stats-value">12/18</span>
+        </div>
+        <div class="stats-item">
+          <span class="stats-label">整体健康：</span>
+          <span class="stats-value">87%</span>
+        </div>
+        <div class="stats-item">
+          <span class="stats-label">异常区域：</span>
+          <span class="stats-value">5处</span>
+        </div>
+      </div>
+      <div class="alert">
+        <span>3处告警</span>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <div class="left-panel">
+        <div class="panel-title">球场概览</div>
+        <div class="map-container">
+          <img src="/api/placeholder/320/250" alt="球场地图" class="map-image">
+          <div class="green-marker normal" style="top: 30%; left: 20%;"></div>
+          <div class="green-marker normal" style="top: 40%; left: 35%;"></div>
+          <div class="green-marker selected warning" style="top: 50%; left: 55%;"></div>
+          <div class="green-marker danger" style="top: 65%; left: 30%;"></div>
+          <div class="green-marker normal" style="top: 75%; left: 70%;"></div>
+          <div class="green-marker normal" style="top: 25%; left: 80%;"></div>
+        </div>
+        
+        <div class="overall-stats">
+          <div class="panel-title">球场数据统计</div>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-title">平均草高</div>
+              <div class="stat-value">4.2mm</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-title">平均叶绿素</div>
+              <div class="stat-value">43.5%</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-title">平均水分</div>
+              <div class="stat-value">35.7%</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-title">草种分布</div>
+              <div class="stat-value">高羊茅</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="data-card">
+          <div class="data-card-title">一周监测数据趋势</div>
+          <div class="trend-indicators">
+            <div class="trend-item">
+              <div class="trend-label">叶绿素</div>
+              <div class="trend-value">+2.3%<span class="trend-direction trend-up">↑</span></div>
+            </div>
+            <div class="trend-item">
+              <div class="trend-label">水分</div>
+              <div class="trend-value">-1.5%<span class="trend-direction trend-down">↓</span></div>
+            </div>
+            <div class="trend-item">
+              <div class="trend-label">平整度</div>
+              <div class="trend-value">+0.5%<span class="trend-direction trend-neutral">↔</span></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="drone-status">
+          <div class="panel-title">无人机状态</div>
+          <div class="status-item">
+            <div>当前状态</div>
+            <div class="status-value">巡检中</div>
+          </div>
+          <div class="status-item">
+            <div>今日任务完成</div>
+            <div class="status-value">12/18</div>
+          </div>
+          <div class="status-item">
+            <div>巡检进度</div>
+            <div class="status-value">67%</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 67%;"></div>
+          </div>
+          <div class="status-item">
+            <div>电池状态</div>
+            <div class="status-value">42%</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill battery-low" style="width: 42%;"></div>
+          </div>
+          <div class="status-item">
+            <div>预计完成时间</div>
+            <div class="status-value">11:45:23</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="center-panel">
+        <div class="green-details-header">
+          <div class="green-name">7号果岭 - 深圳福田</div>
+          <div class="location-info">
+            <div class="location-badge">北纬: 22.5526°</div>
+            <div class="location-badge">东经: 114.0683°</div>
+            <div class="location-badge">面积: 512㎡</div>
+          </div>
+        </div>
+        
+        <div class="layer-controls">
+          <div class="layer-btn active">正射影像</div>
+          <div class="layer-btn">NDVI植被指数</div>
+          <div class="layer-btn">叶绿素浓度</div>
+          <div class="layer-btn">高程地形图</div>
+          <div class="layer-btn">水分分布</div>
+          <div class="layer-btn">杂草分布</div>
+          <div class="layer-btn">异常区域</div>
+        </div>
+        
+        <div class="green-image-container">
+          <img src="/api/placeholder/800/350" alt="3D地图" class="layer-image active">
+          <img src="/api/placeholder/800/350" alt="NDVI植被指数" class="layer-image">
+          <img src="/api/placeholder/800/350" alt="叶绿素浓度" class="layer-image">
+          <img src="/api/placeholder/800/350" alt="高程地形图" class="layer-image">
+          <img src="/api/placeholder/800/350" alt="水分分布" class="layer-image">
+          <img src="/api/placeholder/800/350" alt="杂草分布" class="layer-image">
+          <img src="/api/placeholder/800/350" alt="异常区域" class="layer-image">
+          
+          <div class="coordinate-display">
+            坐标: <span class="coordinate-values">N22°33'09.36", E114°04'05.88"</span><br>
+            高程: <span class="coordinate-values">23.47m</span> | 
+            叶绿素: <span class="coordinate-values">46.8%</span> | 
+            水分: <span class="coordinate-values">34.2%</span>
+          </div>
+        </div>
+        
+        <div class="trend-chart">
+          <div class="chart-container">
+            <img src="/api/placeholder/800/100" alt="7号果岭关键指标近15天变化趋势" style="width:100%; height:100%; object-fit: cover;">
+          </div>
+        </div>
+      </div>
+      
+      <div class="right-panel">
+        <div class="metrics-panel">
+          <div class="panel-title">关键指标概览</div>
+          <div class="metric-item">
+            <div class="metric-label">整体健康评分</div>
+            <div class="metric-value metric-warning">86/100</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">平均叶绿素指数</div>
+            <div class="metric-value metric-good">42.5</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">平整度达标率</div>
+            <div class="metric-value metric-warning">94.3%</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">水分均匀度</div>
+            <div class="metric-value metric-good">89.7%</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">杂草检出率</div>
+            <div class="metric-value metric-danger">2.8%</div>
+          </div>
+          <div class="metric-item">
+            <div class="metric-label">高差最大值</div>
+            <div class="metric-value metric-danger">7.2mm</div>
+          </div>
+        </div>
+        
+        <div class="alerts-panel">
+          <div class="panel-title">告警信息</div>
+          <div class="alerts-list">
+            <div class="alert-item high">
+              <div class="alert-title">平整度异常（高差超标）</div>
+              <div class="alert-details">东北区域发现高差约7.2mm，超出标准限值5mm</div>
+              <div class="alert-time">10:15:36 | 持续23分钟</div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-title">杂草检出</div>
+              <div class="alert-details">中央区域检出3处疑似杂草，总面积约0.5㎡</div>
+              <div class="alert-time">09:35:12 | 首次发现</div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-title">水分分布不均</div>
+              <div class="alert-details">西南角水分偏低，与中心区域差异达18%</div>
+              <div class="alert-time">10:10:45 | 持续2天</div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-title">叶绿素含量偏低</div>
+              <div class="alert-details">南侧边缘区域叶绿素含量低于标准值15%</div>
+              <div class="alert-time">09:40:22 | 持续3天</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="data-card">
+          <div class="data-card-title">维护建议</div>
+          <ul style="font-size: 14px; padding-left: 15px; line-height: 1.5;">
+            <li>东北区域需进行精细平整处理，建议使用轻型压路机</li>
+            <li>中央区域需进行杂草清除，建议人工精细处理</li>
+            <li>西南角需增加灌溉频次，建议在今日傍晚追加一次浇水</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bottom-panel">
+      <div class="chart-box">
+        <div class="chart-title">叶绿素指数历史变化</div>
+        <img src="/api/placeholder/300/150" alt="叶绿素历史变化图" class="chart-image">
+        <div class="timeline-control">
+          <span class="timeline-date">4月1日</span>
+          <input type="range" min="1" max="30" value="15" class="timeline-slider">
+          <span class="timeline-date">4月15日</span>
+        </div>
+      </div>
+      
+      <div class="chart-box">
+        <div class="chart-title">水分分布对比分析</div>
+        <div class="comparison-selector">
+          <select class="date-select">
+            <option>今日 vs 昨日</option>
+            <option>今日 vs 上周同日</option>
+            <option>今日 vs 上月同日</option>
+          </select>
+        </div>
+        <img src="/api/placeholder/300/130" alt="水分对比分析图" class="chart-image">
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div class="legend-color today-color"></div>
+            <span>今日 (35.7%)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color yesterday-color"></div>
+            <span>昨日 (37.2%)</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="chart-box">
+        <div class="chart-title">平整度变化趋势</div>
+        <img src="/api/placeholder/300/150" alt="平整度变化趋势图" class="chart-image">
+        <div class="timeline-control">
+          <span class="timeline-date">4月1日</span>
+          <input type="range" min="1" max="30" value="15" class="timeline-slider">
+          <span class="timeline-date">4月15日</span>
+        </div>
+      </div>
+      
+      <div class="chart-box">
+        <div class="chart-title">问题区域热点图</div>
+        <img src="/api/placeholder/300/150" alt="问题区域热点图" class="chart-image">
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div class="legend-color today-color"></div>
+            <span>平整度问题</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color yesterday-color"></div>
+            <span>水分问题</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color week-ago-color"></div>
+            <span>杂草问题</span>
+          </div>
